@@ -1,8 +1,4 @@
-NAME = mp1
-EXP = data/1/output.raw
-IN = data/1/input0.raw,data/1/input1.raw
-OUT = actual
-TYPE = vector # vector, matrix, or image
+NAME = solution
 
 include ../CS483.mk
 
@@ -18,11 +14,9 @@ $(NAME): $(CU).o $(LIBWB)
 
 # Convenient run.
 run:
-	cp $(EXP) expected
-	./$(NAME) -e $(EXP) -i $(IN) -o $(OUT) -t $(TYPE)
+	./$(NAME)
 
 clean:
-	rm -f $(NAME) $(OUT) \
-			*.o expected
+	rm -f $(NAME) *.o
 
 .PHONY: clean all
