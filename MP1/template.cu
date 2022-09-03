@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
 
   wbTime_start(GPU, "Allocating GPU memory.");
   //@@ Allocate GPU memory here
-  int size = inputLength * sizeof(float);
+  size_t size = inputLength * sizeof(float);
   cudaMalloc((void **) &deviceInput1, size);
   cudaMalloc((void **) &deviceInput2, size);
   cudaMalloc((void **) &deviceOutput, size);
@@ -51,6 +51,8 @@ int main(int argc, char **argv) {
   int blockNum = ceil((float) inputLength / (float) THREAD_NUM);
   dim3 dimGrid(blockNum, 1, 1);  // 1 Dimensional Block and thread.
   dim3 dimBlock(THREAD_NUM, 1, 1);
+
+  wbLog(TRACE, "Number of blocks using: ", blockNum);
 
   wbTime_start(Compute, "Performing CUDA computation");
   //@@ Launch the GPU Kernel here
