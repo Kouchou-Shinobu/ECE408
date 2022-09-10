@@ -1,2 +1,13 @@
+# IDE and editors
+**/.idea
+**/.vscode
 
+# build system
+cmake-build-debug
+
+# object files
+**/*.o
+
+# misc
 Geforce-RTX-3060-Laptop-spec
+cs483-fa22.code-workspace
