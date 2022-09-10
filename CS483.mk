@@ -4,8 +4,13 @@ WB_PATH = ../libwb
 LIBWB = $(WB_PATH)/lib/libwb.so
 
 # Compiling and linking flags.
-CCFLAGS = -std=c++11 -rdc=true
-LDFLAGS = -std=c++11
+CCFLAGS = -g -std=c++11 -rdc=true -arch=sm_86
+LDFLAGS = -std=c++11 -arch=sm_86
+
+# args for the executables.
+EXP = data/$(DATASET)/output.raw
+IN = data/$(DATASET)/input0.raw,data/$(DATASET)/input1.raw
+OUT = actual
 
 ####################### Rules #######################
 
