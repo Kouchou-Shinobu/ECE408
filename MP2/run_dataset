@@ -1,0 +1,6 @@
+#!/bin/bash
+
+mkdir -p bench
+echo "--------------";
+echo "Dataset " $1 
+./template -e ./data/$1/output.raw -i ./data/$1/input0.raw,./data/$1/input1.raw -t matrix
