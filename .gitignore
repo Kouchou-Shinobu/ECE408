@@ -3,7 +3,7 @@
 **/.vscode
 
 # build system
-cmake-build-debug
+cmake-build-debug-wsl
 
 # object files
 **/*.o
