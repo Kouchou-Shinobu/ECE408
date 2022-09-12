@@ -47,3 +47,9 @@ rai -p ./MP0
 ****
 On Windows, you'll need to install WSL and a virtual linux OS. Several Linux versions are available
 through the Microsoft Store.
+
+## Misc
+
+Use the reg-exp below to clean any code for debugging
+
+    //\s*debug\s?\n(.|\n)+?end of debug
