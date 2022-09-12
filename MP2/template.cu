@@ -20,22 +20,6 @@ __global__ void matrixMultiply(float *A, float *B, float *C, int numARows,
     int row = blockDim.y * blockIdx.y + threadIdx.y;
     int col = blockDim.x * blockIdx.x + threadIdx.x;
 
-    // debug
-    // if (row == 255 && blockIdx.x == 32) {
-    //   printf("\n##############################################################\n");
-    //   printf("Row=%d, Column=%d | ", row, col);
-    //   printf("blockIdx(%d, %d), threadIdx(%d, %d)\n", blockIdx.x, blockIdx.y, threadIdx.x, threadIdx.y);
-    //   float tmp = 0.0;
-    //   for (int i = 0; i < numAColumns; ++i) {
-    //     tmp += A[row * numAColumns + i] * B[i * numBColumns + col];
-    //   }
-    //   C[row * numCColumns + col] = tmp;
-    //   printf("The product at (%d, %d), or index=%d, is %f\n",
-    //           col, row, row * numCColumns + col, tmp);
-    //   printf("##############################################################\n\n");
-    // }
-    // end of debug
-
     if ((row < numCRows) && (col < numCColumns)) {
         float tmp = 0.0;
         for (int i = 0; i < numAColumns; ++i) {
