@@ -38,10 +38,11 @@ __global__ void matrixMultiply(float *A, float *B, float *C, int numARows,
         if ((col < numCColumns) && (q * TILE_WIDTH + ty < numBRows))
             subB[ty][tx] = B[(q * TILE_WIDTH + ty) * numBColumns + col];
         __syncthreads();
-        
-        for (int i = 0; i < TILE_WIDTH && i < numAColumns; ++i) {
-            if ((q * TILE_WIDTH + tx < numAColumns)
-                && (q * TILE_WIDTH + ty < numARows))
+
+        // Ensure that 
+        // Recall that `numAColumns` is equal to `numBRows`, so they can be interchanged w.o. issue.
+        for (int i = 0; i < TILE_WIDTH; ++i) {
+            if (q * TILE_WIDTH + i < numAColumns)
                 c += subA[ty][i] * subB[i][tx];
         }
         __syncthreads();
