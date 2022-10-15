@@ -10,6 +10,7 @@ project(ece408 LANGUAGES CUDA CXX)
 include_directories(${WBPATH})
 add_subdirectory(${WBPATH})
 
+# Machine Problems
 # Add executables and linking stuff iteratively.
 file(GLOB_RECURSE mps ${CMAKE_CURRENT_SOURCE_DIR} MP*/template.cu)
 message(STATUS ${mps})
@@ -22,3 +23,7 @@ foreach(mp_source IN LISTS mps)
     set_target_properties(${currentMP} PROPERTIES OUTPUT_NAME template)
     math(EXPR _C "${_C} + 1" OUTPUT_FORMAT DECIMAL)
 endforeach()
+
+# Project Milestone 1
+add_executable(CPU_FORWARD ${CMAKE_CURRENT_SOURCE_DIR}/Project/custom/cpu-new-forward.cc)
+add_executable(GPU_FORWARD ${CMAKE_CURRENT_SOURCE_DIR}/Project/custom/new-forward.cu)
