@@ -15,81 +15,93 @@
       return -1;                                                          \
     }                                                                     \
   } while (0)
-  
+
 __global__ void total(float *input, float *output, int len) {
-  //@@ Load a segment of the input vector into shared memory
-  //@@ Traverse the reduction tree
-  //@@ Write the computed sum of the block to the output vector at the
-  //@@ correct index
+    //@@ Load a segment of the input vector into shared memory
+    //@@ Traverse the reduction tree
+    //@@ Write the computed sum of the block to the output vector at the
+    //@@ correct index
 }
 
 int main(int argc, char **argv) {
-  int ii;
-  wbArg_t args;
-  float *hostInput;  // The input 1D list
-  float *hostOutput; // The output list
-  float *deviceInput;
-  float *deviceOutput;
-  int numInputElements;  // number of elements in the input list
-  int numOutputElements; // number of elements in the output list
+    int ii;
+    wbArg_t args;
+    float *hostInput;  // The input 1D list
+    float *hostOutput; // The output list
+    float *deviceInput;
+    float *deviceOutput;
+    int numInputElements;  // number of elements in the input list
+    int numOutputElements; // number of elements in the output list
 
-  args = wbArg_read(argc, argv);
+    args = wbArg_read(argc, argv);
 
-  wbTime_start(Generic, "Importing data and creating memory on host");
-  hostInput =
-      (float *)wbImport(wbArg_getInputFile(args, 0), &numInputElements);
+    wbTime_start(Generic, "Importing data and creating memory on host");
+    hostInput =
+            (float *) wbImport(wbArg_getInputFile(args, 0), &numInputElements);
 
-  numOutputElements = (numInputElements - 1) / (BLOCK_SIZE << 1) + 1;
-  hostOutput = (float *)malloc(numOutputElements * sizeof(float));
+    numOutputElements = (numInputElements - 1) / (BLOCK_SIZE << 1) + 1;
+    hostOutput = (float *) malloc(numOutputElements * sizeof(float));
 
-  wbTime_stop(Generic, "Importing data and creating memory on host");
+    wbTime_stop(Generic, "Importing data and creating memory on host");
 
-  wbLog(TRACE, "The number of input elements in the input is ",
-        numInputElements);
-  wbLog(TRACE, "The number of output elements in the input is ",
-        numOutputElements);
+    wbLog(TRACE, "The number of input elements in the input is ",
+          numInputElements);
+    wbLog(TRACE, "The number of output elements in the input is ",
+          numOutputElements);
 
-  wbTime_start(GPU, "Allocating GPU memory.");
-  //@@ Allocate GPU memory here
+    wbTime_start(GPU, "Allocating GPU memory.");
+    //@@ Allocate GPU memory here
+    cudaMalloc((void**) &deviceInput, numInputElements * sizeof(float));
+    cudaMalloc((void**) &deviceOutput, numOutputElements * sizeof(float));
 
-  wbTime_stop(GPU, "Allocating GPU memory.");
+    wbTime_stop(GPU, "Allocating GPU memory.");
 
-  wbTime_start(GPU, "Copying input memory to the GPU.");
-  //@@ Copy memory to the GPU here
+    wbTime_start(GPU, "Copying input memory to the GPU.");
+    //@@ Copy memory to the GPU here
+    cudaMemcpy(deviceInput, hostInput, numInputElements * sizeof(float), cudaMemcpyHostToDevice);
 
-  wbTime_stop(GPU, "Copying input memory to the GPU.");
-  //@@ Initialize the grid and block dimensions here
+    wbTime_stop(GPU, "Copying input memory to the GPU.");
+    //@@ Initialize the grid and block dimensions here
+    dim3 blockd(0, 0);
+    dim3 gridd(0, 0);
+    total<<<gridd, blockd>>>(deviceInput, deviceOutput, numInputElements);
 
-  wbTime_start(Compute, "Performing CUDA computation");
-  //@@ Launch the GPU Kernel here
+    wbTime_start(Compute, "Performing CUDA computation");
+    //@@ Launch the GPU Kernel here
 
-  cudaDeviceSynchronize();
-  wbTime_stop(Compute, "Performing CUDA computation");
+    // Error checking. Quit instantly if anything goes wrong.
+    cudaError_t result = cudaDeviceSynchronize();
+    if (result != cudaSuccess) {
+        printf("kernel launch failed with error \"%s\".\n", cudaGetErrorString(result));
+        exit(-1);
+    }
 
-  wbTime_start(Copy, "Copying output memory to the CPU");
-  //@@ Copy the GPU memory back to the CPU here
+    wbTime_stop(Compute, "Performing CUDA computation");
 
-  wbTime_stop(Copy, "Copying output memory to the CPU");
+    wbTime_start(Copy, "Copying output memory to the CPU");
+    //@@ Copy the GPU memory back to the CPU here
 
-  /***********************************************************************
-   * Reduce output vector on the host
-   * NOTE: One could also perform the reduction of the output vector
-   * recursively and support any size input.
-   * For simplicity, we do not require that for this lab!
-   ***********************************************************************/
-  for (ii = 1; ii < numOutputElements; ii++) {
-    hostOutput[0] += hostOutput[ii];
-  }
+    wbTime_stop(Copy, "Copying output memory to the CPU");
 
-  wbTime_start(GPU, "Freeing GPU Memory");
-  //@@ Free the GPU memory here
+    /***********************************************************************
+     * Reduce output vector on the host
+     * NOTE: One could also perform the reduction of the output vector
+     * recursively and support any size input.
+     * For simplicity, we do not require that for this lab!
+     ***********************************************************************/
+    for (ii = 1; ii < numOutputElements; ii++) {
+        hostOutput[0] += hostOutput[ii];
+    }
 
-  wbTime_stop(GPU, "Freeing GPU Memory");
+    wbTime_start(GPU, "Freeing GPU Memory");
+    //@@ Free the GPU memory here
 
-  wbSolution(args, hostOutput, 1);
+    wbTime_stop(GPU, "Freeing GPU Memory");
 
-  free(hostInput);
-  free(hostOutput);
+    wbSolution(args, hostOutput, 1);
 
-  return 0;
+    free(hostInput);
+    free(hostOutput);
+
+    return 0;
 }
