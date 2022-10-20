@@ -16,11 +16,25 @@
     }                                                                     \
   } while (0)
 
-__global__ void total(float *input, float *output, int len) {
+__global__ void total(const float *input, float *output, int len) {
+    __shared__ float Segment[2 * BLOCK_SIZE];
+    unsigned int tx = threadIdx.x;
+    // Each thread is responsible for two elements. So the offset is twice as large.
+    unsigned int start_idx = 2 * blockIdx.x * blockDim.x;
     //@@ Load a segment of the input vector into shared memory
+    Segment[tx] = start_idx + tx < len ? input[start_idx + tx] : 0.0f;
+    Segment[BLOCK_SIZE + tx] = BLOCK_SIZE + start_idx + tx < len ? input[BLOCK_SIZE + start_idx + tx] : 0.0f;
+
     //@@ Traverse the reduction tree
+    for (unsigned int stride = BLOCK_SIZE; stride >= 1; stride /= 2) {
+        __syncthreads();
+        if (tx < stride)
+            Segment[tx] += Segment[stride + tx];
+    }
     //@@ Write the computed sum of the block to the output vector at the
     //@@ correct index
+    if (tx == 0)    // Only the first thread in each block does the output assignment.
+        output[blockIdx.x] = Segment[0];
 }
 
 int main(int argc, char **argv) {
@@ -62,24 +76,25 @@ int main(int argc, char **argv) {
 
     wbTime_stop(GPU, "Copying input memory to the GPU.");
     //@@ Initialize the grid and block dimensions here
-    dim3 blockd(0, 0);
-    dim3 gridd(0, 0);
-    total<<<gridd, blockd>>>(deviceInput, deviceOutput, numInputElements);
+    dim3 blockd(BLOCK_SIZE, 1, 1);
+    dim3 gridd(numOutputElements, 1, 1);
+#ifdef __DEBUG__
+    printf("Using block(%d, %d, %d)  |  grid(%d, %d, %d)\n",
+           blockd.x, blockd.y, blockd.z,
+           gridd.x, gridd.y, gridd.z);
+#endif
 
     wbTime_start(Compute, "Performing CUDA computation");
     //@@ Launch the GPU Kernel here
+    total<<<gridd, blockd>>>(deviceInput, deviceOutput, numInputElements);
 
-    // Error checking. Quit instantly if anything goes wrong.
-    cudaError_t result = cudaDeviceSynchronize();
-    if (result != cudaSuccess) {
-        printf("kernel launch failed with error \"%s\".\n", cudaGetErrorString(result));
-        exit(-1);
-    }
+    wbCheck(cudaDeviceSynchronize());
 
     wbTime_stop(Compute, "Performing CUDA computation");
 
     wbTime_start(Copy, "Copying output memory to the CPU");
     //@@ Copy the GPU memory back to the CPU here
+    cudaMemcpy(hostOutput, deviceOutput, numOutputElements * sizeof(float), cudaMemcpyDeviceToHost);
 
     wbTime_stop(Copy, "Copying output memory to the CPU");
 
@@ -91,7 +106,14 @@ int main(int argc, char **argv) {
      ***********************************************************************/
     for (ii = 1; ii < numOutputElements; ii++) {
         hostOutput[0] += hostOutput[ii];
+#ifdef __DEBUG__
+        printf("%4.2f, ", hostOutput[ii]);
     }
+    printf("\n");
+    printf("First element: %4.2f\n", hostOutput[0]);
+#else
+    }
+#endif
 
     wbTime_start(GPU, "Freeing GPU Memory");
     //@@ Free the GPU memory here
