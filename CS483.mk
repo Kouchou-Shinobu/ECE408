@@ -35,7 +35,7 @@ template: $(CU).o $(LIBWB)
 	$(CC) $(LDFLAGS) -o $@ $^
 
 # Convenient run.
-run_single: $(NAME)
+rs: $(NAME)
 	cp $(EXP) expected
 	./$(NAME) -e $(EXP) -i $(IN) -o $(OUT) -t $(TYPE)
 
