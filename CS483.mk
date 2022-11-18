@@ -35,9 +35,12 @@ template: $(CU).o $(LIBWB)
 	$(CC) $(LDFLAGS) -o $@ $^
 
 # Convenient run.
-run_single: $(NAME)
+rs: $(NAME)
 	cp $(EXP) expected
 	./$(NAME) -e $(EXP) -i $(IN) -o $(OUT) -t $(TYPE)
+
+run_with_sanitizer: $(NAME)
+	compute-sanitizer ./$(NAME) -e $(EXP) -i $(IN) -t $(TYPE)
 
 run: template
 	bash run_datasets
