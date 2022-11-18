@@ -10,30 +10,49 @@
     }                                                                     \
   } while (0)
 
+#define TILE_WIDTH 16
+
 /**
  * Sparse matrix vector multiplication kernel for JDS compression.
  *
  * @param out The output vector.
- * @param matColStart
- * @param matCols
+ * @param matColStart Column start indices. Indicates where each column starts.
+ * @param matCols Column indices. Flattened vertically.
  * @param matRowPerm Row permutation vector.
- * @param matRows
- * @param matData
+ * @param matRows Number of non-zero elements for each row.
+ * @param matData Non-zero elements. Flattened vertically.
  * @param vec The input vector.
- * @param dim
+ * @param dim The number of rows.
  */
-__global__ void spmvJDSKernel(float *out, int *matColStart, int *matCols,
-                              int *matRowPerm, int *matRows,
-                              float *matData, float *vec, int dim) {
-    //@@ insert spmv kernel for jds format
+__global__ void spmvJDSKernel(float *out, const int *matColStart, const int *matCols,
+                              const int *matRowPerm, const int *matRows,
+                              const float *matData, const float *vec, int dim) {
+    unsigned row = blockDim.x * blockIdx.x + threadIdx.x;
 
+    if (row < dim) {    // To Ensure we are operating within the problem size.
+        float dot = 0.0f;
+        // We are working with transposed matrix.
+        for (unsigned sec = 0; sec < matRows[row]; ++sec) {
+            /*
+             * Recall that `matColStart` indicates the starting index of each column.
+             * Here we divide `matData` into several sections, each denoting a column. In each section the elements
+             *  composes a row.
+             * The goal is to map from `row` to "column" (that's what matrix-vector multiplication do), and by sectioning
+             *  we can easily obtain the target index (consider `row` as the offset for each section.)
+             */
+            unsigned tar_idx = matColStart[sec] + row;  // The target index to work with.
+            dot += matData[tar_idx] * vec[matCols[tar_idx]];
+        }
+        out[matRowPerm[row]] = dot;
+    }
 }
 
 static void spmvJDS(float *out, int *matColStart, int *matCols,
                     int *matRowPerm, int *matRows, float *matData,
                     float *vec, int dim) {
-
-    //@@ invoke spmv kernel for jds format
+    dim3 blockd(TILE_WIDTH, 1, 1);
+    dim3 gridd(ceil((float) dim / TILE_WIDTH), 1, 1);
+    spmvJDSKernel<<<gridd, blockd>>>(out, matColStart, matCols, matRowPerm, matRows, matData, vec, dim);
 }
 
 int main(int argc, char **argv) {
@@ -98,7 +117,7 @@ int main(int argc, char **argv) {
     wbTime_start(Compute, "Performing CUDA computation");
     spmvJDS(deviceOutput, deviceJDSColStart, deviceJDSCols, deviceJDSRowPerm, deviceJDSRows,
             deviceJDSData, deviceVector, dim);
-    cudaDeviceSynchronize();
+    wbCheck(cudaDeviceSynchronize());
     wbTime_stop(Compute, "Performing CUDA computation");
 
     wbTime_start(Copy, "Copying output memory to the CPU");
