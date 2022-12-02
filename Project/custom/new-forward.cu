@@ -30,6 +30,18 @@ conv_forward_kernel(float *output, const float *input, const float *mask, const 
     K - kernel height and width (K x K)
     */
 
+    /*
+    Recall that the process of a single convolution (for LeNet-CNN Network) is:
+    We have some input images, with a number of `Batch` in total. Each of image has `Channel` channels, and has a dimension
+     of `Height` * `Width`
+
+    Along with the images come weights, with a total number of `Map-out`, `Channel` channels per map, and `K` * `K` entries
+     per map.
+
+    We convolve the input images with weights, and sum over the channels. Eventually we get some outputs, with a total
+     number of `Batch`, `Map-out` features per output, and dimensions of `Height_out` * `Width_out`.
+     */
+
     const int Height_out = Height - K + 1;
     const int Width_out = Width - K + 1;
     const unsigned int Width_grid = ceil((1.0 * Width_out) / TILE_WIDTH);
